@@ -13,9 +13,9 @@
 #include <stddef.h>
 #include <unistd.h>
 #include <fcntl.h>
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(PURE_LINUX)
 #include <cutils/sockets.h>
-#endif /* ANDROID */
+#endif /* defined(ANDROID) && !defined(PURE_LINUX) */
 
 #include "utils/common.h"
 #include "utils/eloop.h"
@@ -304,13 +304,13 @@ wpa_supplicant_ctrl_iface_init(struct wpa_supplicant *wpa_s)
 	buf = os_strdup(wpa_s->conf->ctrl_interface);
 	if (buf == NULL)
 		goto fail;
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(PURE_LINUX)
 	os_snprintf(addr.sun_path, sizeof(addr.sun_path), "wpa_%s",
 		    wpa_s->conf->ctrl_interface);
 	priv->sock = android_get_control_socket(addr.sun_path);
 	if (priv->sock >= 0)
 		goto havesock;
-#endif /* ANDROID */
+#endif /* defined(ANDROID) && !defined(PURE_LINUX) */
 	if (os_strncmp(buf, "DIR=", 4) == 0) {
 		dir = buf + 4;
 		gid_str = os_strstr(dir, " GROUP=");
@@ -453,9 +453,9 @@ wpa_supplicant_ctrl_iface_init(struct wpa_supplicant *wpa_s)
 	}
 	os_free(fname);
 
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(PURE_LINUX)
 havesock:
-#endif /* ANDROID */
+#endif /* defined(ANDROID) && !defined(PURE_LINUX) */
 
 	/*
 	 * Make socket non-blocking so that we don't hang forever if
@@ -680,7 +680,7 @@ static void wpa_supplicant_global_ctrl_iface_receive(int sock, void *eloop_ctx,
 {
 	struct wpa_global *global = eloop_ctx;
 	struct ctrl_iface_global_priv *priv = sock_ctx;
-	char buf[256];
+	char buf[4096];
 	int res;
 	struct sockaddr_un from;
 	socklen_t fromlen = sizeof(from);
@@ -746,7 +746,7 @@ wpa_supplicant_global_ctrl_iface_init(struct wpa_global *global)
 
 	wpa_printf(MSG_DEBUG, "Global control interface '%s'", ctrl);
 
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(PURE_LINUX)
 	if (os_strncmp(ctrl, "@android:", 9) == 0) {
 		priv->sock = android_get_control_socket(ctrl + 9);
 		if (priv->sock < 0) {
@@ -773,7 +773,7 @@ wpa_supplicant_global_ctrl_iface_init(struct wpa_global *global)
 			goto havesock;
 		}
 	}
-#endif /* ANDROID */
+#endif /* defined(ANDROID) && !defined(PURE_LINUX) */
 
 	priv->sock = socket(PF_UNIX, SOCK_DGRAM, 0);
 	if (priv->sock < 0) {
